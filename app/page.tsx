@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Sparkles, Menu, X, Sun, Moon, Instagram, Youtube, Edit3, Image, Film, ChevronLeft, Plus } from 'lucide-react';
+import { Sparkles, Menu, X, Sun, Moon, Instagram, Youtube, Edit3, Trash2, CheckCircle2, Circle, ChevronLeft, Plus } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 // ===== DATA =====
@@ -123,9 +123,33 @@ export default function LandingPage() {
   }, []);
 
   const addWeek = () => {
-    const nextWeek = weeks.length + 1;
+    // Find the next available week number
+    const nextWeek = weeks.length > 0 ? Math.max(...weeks) + 1 : 1;
     setWeeks([...weeks, nextWeek]);
     setCalendarWeek(nextWeek);
+  };
+
+  const deleteWeek = (weekNum: number) => {
+    if(confirm(`هل أنت متأكد من حذف الأسبوع ${weekNum} وكل محتواه؟`)) {
+      const newWeeks = weeks.filter(w => w !== weekNum);
+      setWeeks(newWeeks);
+      setCalendarData(calendarData.filter(c => c.week !== weekNum));
+      if(calendarWeek === weekNum) {
+        setCalendarWeek(newWeeks.length > 0 ? newWeeks[newWeeks.length - 1] : 1);
+      }
+    }
+  };
+
+  const deleteContent = (id: string) => {
+    if(confirm("هل أنت متأكد من حذف هذا المحتوى؟")) {
+      setCalendarData(calendarData.filter(c => c.id !== id));
+    }
+  };
+
+  const toggleStatus = (id: string) => {
+    setCalendarData(calendarData.map(c => 
+      c.id === id ? { ...c, status: c.status === 'مخطط' ? 'جاهز' : 'مخطط' } : c
+    ));
   };
 
   const handleAddContent = (e: React.FormEvent) => {
@@ -307,9 +331,12 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 mb-8 justify-center flex-wrap">
             <span className="text-sm font-bold flex items-center gap-1" style={{ color: 'rgb(var(--text-primary))' }}>📅 الأسبوع:</span>
             {weeks.map(w => (
-              <button key={w} onClick={() => setCalendarWeek(w)} className={`week-pill ${calendarWeek === w ? 'active' : ''}`}>
-                الأسبوع {w}
-              </button>
+              <div key={w} className={`week-pill flex items-center gap-2 ${calendarWeek === w ? 'active' : ''}`}>
+                <button onClick={() => setCalendarWeek(w)} className="outline-none">الأسبوع {w}</button>
+                <button onClick={(e) => { e.stopPropagation(); deleteWeek(w); }} className="opacity-50 hover:opacity-100 text-red-400 transition-opacity" title="حذف الأسبوع">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             ))}
             <button onClick={addWeek} className="week-pill text-primary border-primary/50 hover:bg-primary/10">+ أسبوع جديد</button>
           </div>
@@ -330,10 +357,23 @@ export default function LandingPage() {
                 <h3 className="font-bold text-base mb-2" style={{ color: 'rgb(var(--text-primary))' }}>{item.title}</h3>
                 <p className="text-xs leading-relaxed mb-4" style={{ color: 'rgb(var(--text-secondary))' }}>{item.description}</p>
                 <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid rgba(var(--border-color))' }}>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     {item.platform.includes('Instagram') && <Instagram className="w-3.5 h-3.5 text-pink-400" />}
                     {item.platform.includes('YouTube') && <Youtube className="w-3.5 h-3.5 text-red-400" />}
-                    <Edit3 className="w-3.5 h-3.5 text-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" />
+                    
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={(e) => { e.stopPropagation(); toggleStatus(item.id); }} title={item.status === 'مخطط' ? "تحديد كـ 'جاهز'" : "تحديد كـ 'مخطط'"}>
+                        {item.status === 'مخطط' ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-400 hover:text-green-300" />
+                        ) : (
+                          <Circle className="w-4 h-4 text-gray-400 hover:text-gray-300" />
+                        )}
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); deleteContent(item.id); }} title="حذف المحتوى">
+                        <Trash2 className="w-4 h-4 text-red-500 hover:text-red-400" />
+                      </button>
+                    </div>
                   </div>
                   <span className="text-xs" style={{ color: 'rgb(var(--text-secondary))' }}>🗓 {item.day}</span>
                 </div>
