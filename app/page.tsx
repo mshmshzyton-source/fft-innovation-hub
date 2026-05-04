@@ -416,6 +416,20 @@ export default function LandingPage() {
                         </div>
                       </div>
                       <p className="text-xs leading-relaxed pr-8" style={{ color: 'rgb(var(--text-secondary))' }}>{item.description}</p>
+                      
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-3 mt-3 pr-8">
+                        <button onClick={(e) => { e.stopPropagation(); toggleStatus(item.id); }} title={item.status === 'مخطط' ? "تحديد كـ 'جاهز'" : "تحديد كـ 'مخطط'"}>
+                          {item.status === 'مخطط' ? (
+                            <Circle className="w-5 h-5 text-gray-500 hover:text-green-400 transition-colors" />
+                          ) : (
+                            <CheckCircle2 className="w-5 h-5 text-green-500 hover:text-gray-400 transition-colors" />
+                          )}
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); deleteContent(item.id); }} title="حذف المحتوى">
+                          <Trash2 className="w-5 h-5 text-red-500/70 hover:text-red-500 transition-colors" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
