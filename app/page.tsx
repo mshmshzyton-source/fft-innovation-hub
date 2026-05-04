@@ -71,6 +71,7 @@ const NAV_ITEMS = [
   { label: 'النوادي', href: '#clubs' },
   { label: 'التقويم', href: '#calendar' },
   { label: 'خطة التعريف', href: '#intro-plan' },
+  { label: 'مصنع الأفكار ✨', href: '/dashboard/idea-factory' },
 ];
 
 const FILTER_CLUBS = [
@@ -139,8 +140,8 @@ export default function LandingPage() {
           </div>
           <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
             {NAV_ITEMS.map(item => (
-              <a key={item.href} href={item.href} className={`px-4 py-2 rounded-lg transition-all ${activeSection === item.href.slice(1) ? 'nav-pill-active' : ''}`}
-                style={{ color: activeSection === item.href.slice(1) ? '#8b5cf6' : 'rgb(var(--text-secondary))' }}>
+              <a key={item.href} href={item.href} className={`px-4 py-2 rounded-lg transition-all ${activeSection === item.href.slice(1) ? 'nav-pill-active' : ''} ${item.href.startsWith('/') ? 'text-primary font-bold bg-primary/10 hover:bg-primary/20' : ''}`}
+                style={{ color: item.href.startsWith('/') ? '' : (activeSection === item.href.slice(1) ? '#8b5cf6' : 'rgb(var(--text-secondary))') }}>
                 {item.label}
               </a>
             ))}
@@ -181,9 +182,15 @@ export default function LandingPage() {
             مرحباً بك في{' '}
             <span className="gradient-text">FFT Content Hub</span>
           </h1>
-          <p className="text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-12 animate-fade-in" style={{ color: 'rgb(var(--text-secondary))', animationDelay: '0.2s' }}>
+          <p className="text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-8 animate-fade-in" style={{ color: 'rgb(var(--text-secondary))', animationDelay: '0.2s' }}>
             منصة إدارة المحتوى الأسبوعي لملتقى FFT الطلابي. نظّم، خطط، وأنشر محتوى النوادي الثلاثة بسهولة واحترافية.
           </p>
+          <div className="flex justify-center mb-12 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+            <Link href="/dashboard/idea-factory" className="px-8 py-3 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-bold flex items-center gap-2 hover:scale-105 transition-all shadow-lg shadow-primary/20">
+              <Sparkles className="w-5 h-5" />
+              الدخول لمصنع الأفكار (AI)
+            </Link>
+          </div>
           {/* Stats */}
           <div className="flex justify-center gap-8 sm:gap-16 animate-fade-in" style={{ animationDelay: '0.4s' }}>
             {[{ num: '3', label: 'نوادي طلابية' }, { num: '+12', label: 'محتوى مخطط' }, { num: '4', label: 'أسابيع تعريفية' }].map(s => (
