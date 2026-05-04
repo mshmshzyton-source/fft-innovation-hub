@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Sparkles, Menu, X, Sun, Moon, Instagram, Youtube, Edit3, Trash2, CheckCircle2, Circle, ChevronLeft, Plus } from 'lucide-react';
+import { Sparkles, Menu, X, Sun, Moon, Instagram, Youtube, Edit3, Trash2, CheckCircle2, Circle, ChevronLeft, Plus, Settings } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 // ===== DATA =====
-const CLUBS_DATA = [
+const DEFAULT_CLUBS_DATA = [
   {
     name: 'Tech & AI Club',
     emoji: '🤖',
@@ -61,14 +61,6 @@ const NAV_ITEMS = [
   { label: 'مصنع الأفكار ✨', href: '/dashboard/idea-factory' },
 ];
 
-const FILTER_CLUBS = [
-  { label: 'الكل', value: 'all' },
-  { label: 'ملتقى FFT 🏆', value: 'ملتقى FFT' },
-  { label: 'نادي التقنية والذكاء الاصطناعي 🤖', value: 'نادي التقنية والذكاء الاصطناعي' },
-  { label: 'نادي ريادة الأعمال والمشاريع 🚀', value: 'نادي ريادة الأعمال والمشاريع' },
-  { label: 'نادي الإعلام والإبداع 🎨', value: 'نادي الإعلام والإبداع' },
-];
-
 const DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
 // ===== COMPONENT =====
@@ -80,10 +72,13 @@ export default function LandingPage() {
   const [calendarWeek, setCalendarWeek] = useState(1);
   const [weeks, setWeeks] = useState([1, 2, 3, 4]);
   const [calendarData, setCalendarData] = useState<ContentItem[]>(DEFAULT_CALENDAR_DATA);
+  const [clubsData, setClubsData] = useState(DEFAULT_CLUBS_DATA);
   const [isClient, setIsClient] = useState(false);
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingClubIndex, setEditingClubIndex] = useState<number | null>(null);
+  const [editClubForm, setEditClubForm] = useState({ name: '', emoji: '', description: '', skills: '' });
   const [newContent, setNewContent] = useState<Partial<ContentItem>>({
     title: '', description: '', type: 'بوست', status: 'مخطط', day: 'الأحد', club: 'ملتقى FFT', clubEmoji: '🏆', platform: ['Instagram'], week: 1
   });
@@ -94,14 +89,17 @@ export default function LandingPage() {
     if (savedData) setCalendarData(JSON.parse(savedData));
     const savedWeeks = localStorage.getItem('fft_calendar_weeks');
     if (savedWeeks) setWeeks(JSON.parse(savedWeeks));
+    const savedClubs = localStorage.getItem('fft_clubs_data');
+    if (savedClubs) setClubsData(JSON.parse(savedClubs));
   }, []);
 
   useEffect(() => {
     if (isClient) {
       localStorage.setItem('fft_calendar_data', JSON.stringify(calendarData));
       localStorage.setItem('fft_calendar_weeks', JSON.stringify(weeks));
+      localStorage.setItem('fft_clubs_data', JSON.stringify(clubsData));
     }
-  }, [calendarData, weeks, isClient]);
+  }, [calendarData, weeks, clubsData, isClient]);
 
   useEffect(() => {
     document.body.classList.toggle('light-mode', !darkMode);
@@ -161,6 +159,12 @@ export default function LandingPage() {
     if (newContent.club?.includes('التقنية')) emoji = '🤖';
     if (newContent.club?.includes('ريادة')) emoji = '🚀';
     if (newContent.club?.includes('الإعلام')) emoji = '🎨';
+    
+    // Check if the selected club is a dynamic club from clubsData
+    const selectedClubData = clubsData.find(c => c.name === newContent.club);
+    if (selectedClubData) {
+      emoji = selectedClubData.emoji;
+    }
 
     const item: ContentItem = {
       id: uuidv4(),
@@ -180,9 +184,44 @@ export default function LandingPage() {
     setNewContent({ title: '', description: '', type: 'بوست', status: 'مخطط', day: 'الأحد', club: 'ملتقى FFT', clubEmoji: '🏆', platform: ['Instagram'], week: calendarWeek });
   };
 
+  const filterClubsList = [
+    { label: 'الكل', value: 'all' },
+    { label: 'ملتقى FFT 🏆', value: 'ملتقى FFT' },
+    ...clubsData.map(c => ({ label: `${c.name} ${c.emoji}`, value: c.name }))
+  ];
+
   const filteredContent = calendarData.filter(item =>
     (calendarFilter === 'all' || item.club === calendarFilter) && item.week === calendarWeek
   );
+
+  const saveClubEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingClubIndex === null) return;
+    
+    const newClubs = [...clubsData];
+    const oldName = newClubs[editingClubIndex].name;
+    
+    newClubs[editingClubIndex] = {
+      ...newClubs[editingClubIndex],
+      name: editClubForm.name,
+      emoji: editClubForm.emoji,
+      description: editClubForm.description,
+      skills: editClubForm.skills.split(',').map(s => s.trim()).filter(Boolean)
+    };
+    
+    setClubsData(newClubs);
+    
+    // Update existing content with the new club name and emoji
+    if (oldName !== editClubForm.name || newClubs[editingClubIndex].emoji !== editClubForm.emoji) {
+      setCalendarData(calendarData.map(c => 
+        c.club === oldName 
+          ? { ...c, club: editClubForm.name, clubEmoji: editClubForm.emoji } 
+          : c
+      ));
+    }
+    
+    setEditingClubIndex(null);
+  };
 
   const introPlanData = weeks.map(w => ({
     week: w,
@@ -287,8 +326,14 @@ export default function LandingPage() {
             <p style={{ color: 'rgb(var(--text-secondary))' }}>ثلاثة نوادي متخصصة مشتقة من ملتقى FFT</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {CLUBS_DATA.map((club, i) => (
-              <div key={i} className={`glass-card p-6 sm:p-8 transition-all duration-500 hover:-translate-y-2 group`}>
+            {clubsData.map((club, i) => (
+              <div key={i} className={`glass-card p-6 sm:p-8 transition-all duration-500 hover:-translate-y-2 group relative`}>
+                <button onClick={() => {
+                  setEditingClubIndex(i);
+                  setEditClubForm({ name: club.name, emoji: club.emoji, description: club.description, skills: club.skills.join('، ') });
+                }} className="absolute top-4 left-4 p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
+                  <Settings className="w-4 h-4" />
+                </button>
                 <div className={`w-14 h-14 rounded-2xl ${club.iconBg} flex items-center justify-center text-3xl mb-5`}>
                   {club.emoji}
                 </div>
@@ -319,7 +364,7 @@ export default function LandingPage() {
               <Plus className="w-4 h-4" /> إضافة محتوى
             </button>
             <div className="w-full sm:w-auto" />
-            {FILTER_CLUBS.map(f => (
+            {filterClubsList.map(f => (
               <button key={f.value} onClick={() => setCalendarFilter(f.value)}
                 className={`filter-pill ${calendarFilter === f.value ? 'active' : ''}`}>
                 {f.label}
@@ -484,7 +529,7 @@ export default function LandingPage() {
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">النادي</label>
                   <select value={newContent.club} onChange={e => setNewContent({...newContent, club: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white outline-none text-xs sm:text-sm">
-                    {FILTER_CLUBS.filter(f => f.value !== 'all').map(f => (
+                    {filterClubsList.filter(f => f.value !== 'all').map(f => (
                       <option key={f.value} value={f.value} className="bg-gray-800">{f.label}</option>
                     ))}
                   </select>
@@ -499,6 +544,45 @@ export default function LandingPage() {
 
               <button type="submit" className="w-full py-3 mt-4 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition-all">
                 حفظ وإضافة للتقويم
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===== EDIT CLUB MODAL ===== */}
+      {editingClubIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setEditingClubIndex(null)}>
+          <div className="bg-surfaceSolid border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl p-6" onClick={e => e.stopPropagation()} style={{ background: 'rgba(var(--nav-bg))', borderColor: 'rgba(var(--border-color))' }}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white">تعديل تفاصيل النادي</h2>
+              <button onClick={() => setEditingClubIndex(null)} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            
+            <form onSubmit={saveClubEdit} className="space-y-4">
+              <div className="grid grid-cols-[1fr_80px] gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">اسم النادي</label>
+                  <input type="text" required value={editClubForm.name} onChange={e => setEditClubForm({...editClubForm, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">الإيموجي</label>
+                  <input type="text" required value={editClubForm.emoji} onChange={e => setEditClubForm({...editClubForm, emoji: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white text-center outline-none focus:border-primary" />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">وصف النادي / التخصص</label>
+                <textarea required value={editClubForm.description} onChange={e => setEditClubForm({...editClubForm, description: e.target.value})} rows={3} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-primary"></textarea>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">المهارات (افصل بينها بفاصلة)</label>
+                <input type="text" required value={editClubForm.skills} onChange={e => setEditClubForm({...editClubForm, skills: e.target.value})} placeholder="مثال: التصميم، البرمجة، التسويق" className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-primary" />
+              </div>
+
+              <button type="submit" className="w-full py-3 mt-4 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition-all">
+                حفظ التعديلات
               </button>
             </form>
           </div>
